@@ -1,0 +1,45 @@
+{
+  "name": "@userin/mcp-server",
+  "version": "1.1.0",
+  "description": "MCP Server para operacoes completas da plataforma UserIn — journeys, campanhas, segmentacao, perfis, regras, criativos e mais.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "userin-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    ".env.example"
+  ],
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc && node -e \"const fs=require('fs');const p='dist/index.js';const c=fs.readFileSync(p,'utf8');if(!c.startsWith('#!')){fs.writeFileSync(p,'#!/usr/bin/env node\\n'+c)}\"",
+    "prepare": "npm run build",
+    "test": "tsx src/test.ts"
+  },
+  "keywords": [
+    "mcp",
+    "userin",
+    "ai",
+    "journeys",
+    "campaigns",
+    "segmentation",
+    "crm"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "dotenv": "^16.4.7",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
