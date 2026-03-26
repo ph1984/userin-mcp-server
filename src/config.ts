@@ -23,4 +23,8 @@ export const config = {
     jwtSecret: process.env.JWT_SECRET || "userinsight_secret_key_2024",
     ingestionApiKey: process.env.INGESTION_API_KEY || "",
   },
+  credentials: {
+    email: process.env.USERIN_EMAIL || "",
+    password: process.env.USERIN_PASSWORD || "",
+  },
 };

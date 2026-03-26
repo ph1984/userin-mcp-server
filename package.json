@@ -1,6 +1,6 @@
 {
   "name": "@userin/mcp-server",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "MCP Server para operacoes completas da plataforma UserIn — journeys, campanhas, segmentacao, perfis, regras, criativos e mais.",
   "type": "module",
   "main": "dist/index.js",

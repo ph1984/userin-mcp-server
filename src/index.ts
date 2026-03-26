@@ -1,5 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { config } from "./config.js";
+import { performLogin } from "./tools/auth.js";
 
 import { registerAuthTools } from "./tools/auth.js";
 import { registerSegmentTools } from "./tools/segments.js";
@@ -20,8 +22,8 @@ import { registerUserProfileTools } from "./tools/user-profiles.js";
 
 const server = new McpServer({
   name: "userin",
-  version: "1.2.0",
-  description: "MCP Server para operacoes completas da plataforma UserIn. Faca login primeiro com a tool 'login'.",
+  version: "1.3.0",
+  description: "MCP Server para operacoes completas da plataforma UserIn.",
 });
 
 registerAuthTools(server);
@@ -41,6 +43,14 @@ registerIngestionTools(server);
 registerAnalyticsTools(server);
 registerCreativeStudioTools(server);
 
+if (config.credentials.email && config.credentials.password) {
+  performLogin(config.credentials.email, config.credentials.password)
+    .then((msg) => console.error(`[userin-mcp] Auto-login OK: ${msg}`))
+    .catch((err) => console.error(`[userin-mcp] Auto-login falhou: ${err.message}. Use a tool 'login' manualmente.`));
+} else {
+  console.error("[userin-mcp] USERIN_EMAIL/USERIN_PASSWORD nao configurados. Use a tool 'login' para autenticar.");
+}
+
 const transport = new StdioServerTransport();
 await server.connect(transport);
-console.error("[userin-mcp] Server v1.2.0 started — use login(email, password) to authenticate");
+console.error("[userin-mcp] Server v1.3.0 ready");
