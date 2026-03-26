@@ -19,11 +19,33 @@ import { registerOntologyTools } from "./tools/ontology.js";
 import { registerCreativeStudioTools } from "./tools/creative-studio.js";
 import { registerListTools } from "./tools/lists.js";
 import { registerUserProfileTools } from "./tools/user-profiles.js";
+import { registerPlatformReferenceTools } from "./tools/platform-reference.js";
 
 const server = new McpServer({
   name: "userin",
-  version: "1.3.0",
-  description: "MCP Server para operacoes completas da plataforma UserIn.",
+  version: "1.4.0",
+  description: `MCP Server da plataforma UserIn — plataforma de CRM inteligente, segmentacao comportamental e automacao de marketing para iGaming (apostas esportivas e cassino).
+
+CAPACIDADES PRINCIPAIS:
+- Journeys: fluxos visuais de automacao (insite no site do cliente, ou offsite via SMS/Email)
+- Campanhas: envio em massa de SMS, Email, RCS, WhatsApp para listas de contatos
+- Segmentacao: segmentos comportamentais em tempo real (depositos, cliques, intencao, tags)
+- Perfis: busca e analise de usuarios por stage (anonymous→registered→ftd→depositor→churned), tier de deposito, intencao, tags
+- Smart Modals/Blocks: componentes visuais injetados no site do cliente
+- Regras comportamentais: condicoes que disparam acoes (ex: usuario na pagina X + depositou Y)
+- Creative Studio: templates de banner, geracao de imagens
+- CRM: contatos, listas, campanhas multicanal
+
+FLUXO TIPICO — Campanha SMS segmentada:
+1. get_profile_stats → entender a base
+2. get_profiles_by_tag("whale") ou get_profiles_by_stage("registered") → encontrar audiencia
+3. create_list → criar lista de contatos
+4. add_contacts_to_list → popular a lista
+5. create_journey (offsite, trigger.webhook, action.sendSms) → criar jornada com mensagem
+6. update_journey({ status: "active" }) → ativar
+7. trigger_journey_offsite_batch → disparar para os usuarios
+
+DICA: Chame get_platform_reference para ver o guia completo de tools e workflows.`,
 });
 
 registerAuthTools(server);
@@ -42,6 +64,7 @@ registerIntegrationTools(server);
 registerIngestionTools(server);
 registerAnalyticsTools(server);
 registerCreativeStudioTools(server);
+registerPlatformReferenceTools(server);
 
 import { session } from "./session.js";
 
@@ -56,4 +79,4 @@ if (config.credentials.email && config.credentials.password) {
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
-console.error("[userin-mcp] Server v1.3.0 ready");
+console.error("[userin-mcp] Server v1.4.0 ready");
