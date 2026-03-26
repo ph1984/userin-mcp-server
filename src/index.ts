@@ -43,7 +43,10 @@ registerIngestionTools(server);
 registerAnalyticsTools(server);
 registerCreativeStudioTools(server);
 
+import { session } from "./session.js";
+
 if (config.credentials.email && config.credentials.password) {
+  session.setCredentials(config.credentials.email, config.credentials.password);
   performLogin(config.credentials.email, config.credentials.password)
     .then((msg) => console.error(`[userin-mcp] Auto-login OK: ${msg}`))
     .catch((err) => console.error(`[userin-mcp] Auto-login falhou: ${err.message}. Use a tool 'login' manualmente.`));

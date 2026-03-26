@@ -96,12 +96,13 @@ Chame uma vez no inicio da sessao. Para renovar o token, chame login novamente.`
       password: z.string().describe("Senha do usuario"),
     },
     async ({ email, password }) => {
+      session.setCredentials(email, password);
       const msg = await performLogin(email, password);
       return {
         content: [
           {
             type: "text" as const,
-            text: msg + "\nTodas as tools agora usam este token automaticamente.",
+            text: msg + "\nTodas as tools agora usam este token automaticamente. Token sera renovado automaticamente se expirar.",
           },
         ],
       };

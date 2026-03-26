@@ -1,7 +1,6 @@
 /**
  * Sessao em memoria do MCP Server.
- * Armazena JWT e companyId obtidos via login.
- * Todas as tools usam session.companyId e session.jwt automaticamente.
+ * Armazena JWT, companyId e credenciais para auto-renovacao.
  */
 
 interface UserInfo {
@@ -15,6 +14,9 @@ class Session {
   private _jwt = "";
   private _companyId = "";
   private _user: UserInfo | null = null;
+  private _email = "";
+  private _password = "";
+  private _refreshing: Promise<void> | null = null;
 
   get jwt(): string {
     return this._jwt;
@@ -32,16 +34,30 @@ class Session {
     return !!this._jwt && !!this._companyId;
   }
 
+  get canAutoRefresh(): boolean {
+    return !!this._email && !!this._password;
+  }
+
+  get credentials(): { email: string; password: string } {
+    return { email: this._email, password: this._password };
+  }
+
+  setCredentials(email: string, password: string): void {
+    this._email = email;
+    this._password = password;
+  }
+
   setFromLogin(jwt: string, companyId: string, user: UserInfo): void {
     this._jwt = jwt;
     this._companyId = companyId;
     this._user = user;
+    if (user.email) this._email = user.email;
   }
 
   requireAuth(): void {
     if (!this._jwt) {
       throw new Error(
-        "Voce precisa fazer login primeiro. Use a tool 'login' com email e senha."
+        "Voce precisa fazer login primeiro. Configure USERIN_EMAIL e USERIN_PASSWORD, ou use a tool 'login'."
       );
     }
     if (!this._companyId) {
@@ -51,13 +67,26 @@ class Session {
     }
   }
 
+  /**
+   * Marca que um refresh esta em andamento (evita refresh duplicado em requests concorrentes).
+   */
+  setRefreshing(promise: Promise<void>): void {
+    this._refreshing = promise;
+    promise.finally(() => { this._refreshing = null; });
+  }
+
+  getRefreshing(): Promise<void> | null {
+    return this._refreshing;
+  }
+
   summary(): string {
     if (!this.isLoggedIn) {
-      return "Nao logado. Use login(email, password) primeiro.";
+      return "Nao logado. Configure USERIN_EMAIL/USERIN_PASSWORD ou use login(email, password).";
     }
     return [
       `Logado como: ${this._user?.name} (${this._user?.email})`,
       `Empresa (companyId): ${this._companyId}`,
+      `Auto-refresh: ${this.canAutoRefresh ? "ativo" : "inativo"}`,
     ].join("\n");
   }
 

@@ -22,7 +22,34 @@ function buildUrl(base: string, path: string, query?: Record<string, string | nu
   return url.toString();
 }
 
-async function request(baseUrl: string, path: string, options: RequestOptions = {}): Promise<unknown> {
+async function refreshToken(): Promise<void> {
+  if (!session.canAutoRefresh) return;
+
+  const existing = session.getRefreshing();
+  if (existing) {
+    await existing;
+    return;
+  }
+
+  const { email, password } = session.credentials;
+  const promise = (async () => {
+    console.error("[userin-mcp] Token expirado, renovando...");
+    const { performLogin } = await import("./tools/auth.js");
+    await performLogin(email, password);
+    console.error("[userin-mcp] Token renovado com sucesso.");
+  })();
+
+  session.setRefreshing(promise);
+  await promise;
+}
+
+async function rawFetch(url: string, fetchOptions: RequestInit): Promise<{ response: Response; text: string }> {
+  const response = await fetch(url, fetchOptions);
+  const text = await response.text();
+  return { response, text };
+}
+
+async function request(baseUrl: string, path: string, options: RequestOptions = {}, _isRetry = false): Promise<unknown> {
   const { method = "GET", body, headers = {}, query } = options;
   const url = buildUrl(baseUrl, path, query);
 
@@ -38,8 +65,25 @@ async function request(baseUrl: string, path: string, options: RequestOptions = 
     fetchOptions.body = JSON.stringify(body);
   }
 
-  const response = await fetch(url, fetchOptions);
-  const text = await response.text();
+  let { response, text } = await rawFetch(url, fetchOptions);
+
+  if (response.status === 401 && !_isRetry && session.canAutoRefresh) {
+    await refreshToken();
+    const retryHeaders = { ...headers };
+    if (retryHeaders["Authorization"]) {
+      retryHeaders["Authorization"] = `Bearer ${session.jwt}`;
+    }
+    const retryFetchOptions: RequestInit = {
+      method,
+      headers: { "Content-Type": "application/json", ...retryHeaders },
+    };
+    if (body && method !== "GET") {
+      retryFetchOptions.body = JSON.stringify(body);
+    }
+    const retry = await rawFetch(url, retryFetchOptions);
+    response = retry.response;
+    text = retry.text;
+  }
 
   let data: unknown;
   try {
@@ -79,7 +123,7 @@ function withIngestionAuth(headers: Record<string, string> = {}): Record<string,
   return headers;
 }
 
-// Segment Engine — sem auth (servico interno)
+// Segment Engine
 export const segments = {
   get: (path: string, query?: Record<string, string | number | boolean | undefined>) =>
     request(config.services.segments, path, { query }),
@@ -91,7 +135,7 @@ export const segments = {
     request(config.services.segments, path, { method: "DELETE" }),
 };
 
-// Platform Backend — JWT + API Secret
+// Platform Backend — JWT + API Secret (com auto-retry em 401)
 export const platform = {
   get: (path: string, query?: Record<string, string | number | boolean | undefined>) =>
     request(config.services.platform, path, { headers: withPlatformAuth(), query }),
@@ -103,7 +147,7 @@ export const platform = {
     request(config.services.platform, path, { method: "DELETE", headers: withPlatformAuth() }),
 };
 
-// AI Journey Service — sem auth especial
+// AI Journey Service
 export const aiJourney = {
   get: (path: string, query?: Record<string, string | number | boolean | undefined>) =>
     request(config.services.aiJourney, path, { query }),
@@ -131,7 +175,7 @@ export const ingestion = {
     request(config.services.ingestion, path, { method: "POST", body, headers: withIngestionAuth() }),
 };
 
-// CreateFlow — JWT (mesmo secret da platform)
+// CreateFlow — JWT (com auto-retry)
 export const createflow = {
   get: (path: string, query?: Record<string, string | number | boolean | undefined>) =>
     request(config.services.createflow, path, { headers: withPlatformAuth(), query }),
@@ -143,7 +187,7 @@ export const createflow = {
     request(config.services.createflow, path, { method: "DELETE", headers: withPlatformAuth() }),
 };
 
-// FlowImager — JWT (mesmo secret da platform)
+// FlowImager — JWT (com auto-retry)
 export const flowimager = {
   get: (path: string, query?: Record<string, string | number | boolean | undefined>) =>
     request(config.services.flowimager, path, { headers: withPlatformAuth(), query }),
