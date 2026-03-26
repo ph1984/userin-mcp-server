@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { segments } from "../http-client.js";
 import { config } from "../config.js";
+import { session } from "../session.js";
 
 export function registerSegmentTools(server: McpServer) {
   server.tool(
@@ -19,10 +20,10 @@ export function registerSegmentTools(server: McpServer) {
     "Obtem detalhes de um segmento especifico, incluindo contagem de membros.",
     {
       segmentId: z.string().describe("ID do segmento"),
-      companyId: z.string().optional().describe("ID da empresa (usa DEFAULT_COMPANY_ID se omitido)"),
     },
-    async ({ segmentId, companyId }) => {
-      const cid = companyId || config.defaultCompanyId;
+    async ({ segmentId }) => {
+      session.requireAuth();
+      const cid = session.companyId;
       const data = await segments.get(`/segments/${segmentId}`, { companyId: cid });
       return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
     }
@@ -33,12 +34,12 @@ export function registerSegmentTools(server: McpServer) {
     "Lista os membros (userIds) de um segmento. Suporta paginacao por shard.",
     {
       segmentId: z.string().describe("ID do segmento"),
-      companyId: z.string().optional().describe("ID da empresa"),
       shard: z.number().optional().describe("Shard number (0-63) para paginacao"),
       limit: z.number().optional().describe("Limite de resultados"),
     },
-    async ({ segmentId, companyId, shard, limit }) => {
-      const cid = companyId || config.defaultCompanyId;
+    async ({ segmentId, shard, limit }) => {
+      session.requireAuth();
+      const cid = session.companyId;
       const data = await segments.get(`/segments/${segmentId}/members`, {
         companyId: cid,
         shard,
@@ -54,10 +55,10 @@ export function registerSegmentTools(server: McpServer) {
     {
       segmentId: z.string().describe("ID do segmento"),
       userId: z.string().describe("ID do usuario"),
-      companyId: z.string().optional().describe("ID da empresa"),
     },
-    async ({ segmentId, userId, companyId }) => {
-      const cid = companyId || config.defaultCompanyId;
+    async ({ segmentId, userId }) => {
+      session.requireAuth();
+      const cid = session.companyId;
       const data = await segments.get(`/segments/${segmentId}/check/${userId}`, { companyId: cid });
       return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
     }
@@ -80,12 +81,12 @@ export function registerSegmentTools(server: McpServer) {
     "create_blast_campaign",
     "Cria uma campanha de blast para um segmento. Popula o outbox com todos os membros do segmento para envio.",
     {
-      companyId: z.string().optional().describe("ID da empresa"),
       segmentId: z.string().describe("ID do segmento alvo"),
       campaignId: z.string().optional().describe("ID da campanha (gerado automaticamente se omitido)"),
     },
-    async ({ companyId, segmentId, campaignId }) => {
-      const cid = companyId || config.defaultCompanyId;
+    async ({ segmentId, campaignId }) => {
+      session.requireAuth();
+      const cid = session.companyId;
       const data = await segments.post("/blast/campaigns", {
         companyId: cid,
         segmentId,

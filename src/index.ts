@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
+import { registerAuthTools } from "./tools/auth.js";
 import { registerSegmentTools } from "./tools/segments.js";
 import { registerUserTools } from "./tools/users.js";
 import { registerRuleTools } from "./tools/rules.js";
@@ -19,10 +20,11 @@ import { registerUserProfileTools } from "./tools/user-profiles.js";
 
 const server = new McpServer({
   name: "userin",
-  version: "1.1.0",
-  description: "MCP Server para operacoes completas da plataforma UserIn: journeys, campanhas, segmentacao, perfis, regras, criativos e mais.",
+  version: "1.2.0",
+  description: "MCP Server para operacoes completas da plataforma UserIn. Faca login primeiro com a tool 'login'.",
 });
 
+registerAuthTools(server);
 registerOntologyTools(server);
 registerSegmentTools(server);
 registerUserTools(server);
@@ -41,4 +43,4 @@ registerCreativeStudioTools(server);
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
-console.error("[userin-mcp] Server v1.1.0 started — stdio transport");
+console.error("[userin-mcp] Server v1.2.0 started — use login(email, password) to authenticate");

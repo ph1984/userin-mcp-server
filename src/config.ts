@@ -18,11 +18,9 @@ export const config = {
     flowimager: process.env.FLOWIMAGER_URL || "http://localhost:4001",
   },
   auth: {
-    platformJwt: process.env.PLATFORM_JWT_TOKEN || "",
     internalSecret: process.env.INTERNAL_SECRET || "userin-internal-2024",
     apiSecret: process.env.API_SECRET || "userinsight_secret_key_2023",
     jwtSecret: process.env.JWT_SECRET || "userinsight_secret_key_2024",
     ingestionApiKey: process.env.INGESTION_API_KEY || "",
   },
-  defaultCompanyId: process.env.DEFAULT_COMPANY_ID || "",
 };

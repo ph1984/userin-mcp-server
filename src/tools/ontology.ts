@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { platform } from "../http-client.js";
 import { config } from "../config.js";
+import { session } from "../session.js";
 
 export function registerOntologyTools(server: McpServer) {
   server.tool(
@@ -53,11 +54,11 @@ SEMPRE consulte ANTES de criar jornadas ou regras para usar apenas tipos que exi
     "get_ontology_fields",
     "Retorna TODOS os atributos/campos disponíveis do perfil do usuário para usar em condições de 'profile_attribute'. Cada campo tem: path (usar no campo 'atributo'), label, dataType, enumValues, group, description. SEMPRE consulte ANTES de criar condições com profile_attribute.",
     {
-      companyId: z.string().optional().describe("ID da empresa"),
       grouped: z.boolean().optional().describe("Se true, retorna campos agrupados por entidade > grupo > tipo"),
     },
-    async ({ companyId, grouped }) => {
-      const cid = companyId || config.defaultCompanyId;
+    async ({ grouped }) => {
+      session.requireAuth();
+      const cid = session.companyId;
       const endpoint = grouped
         ? `/api/ontology/fields/${cid}/grouped`
         : `/api/ontology/fields/${cid}/selectable`;
@@ -69,11 +70,10 @@ SEMPRE consulte ANTES de criar jornadas ou regras para usar apenas tipos que exi
   server.tool(
     "get_ontology_groups",
     "Lista os grupos de atributos disponíveis (behavior, deposits, preferences, etc) com contagem de campos.",
-    {
-      companyId: z.string().optional().describe("ID da empresa"),
-    },
-    async ({ companyId }) => {
-      const cid = companyId || config.defaultCompanyId;
+    {},
+    async () => {
+      session.requireAuth();
+      const cid = session.companyId;
       const data = await platform.get(`/api/ontology/groups/${cid}`);
       return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
     }

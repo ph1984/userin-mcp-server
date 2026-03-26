@@ -1,4 +1,5 @@
 import { config } from "./config.js";
+import { session } from "./session.js";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
@@ -58,8 +59,9 @@ async function request(baseUrl: string, path: string, options: RequestOptions = 
 }
 
 function withPlatformAuth(headers: Record<string, string> = {}): Record<string, string> {
-  if (config.auth.platformJwt) {
-    headers["Authorization"] = `Bearer ${config.auth.platformJwt}`;
+  const jwt = session.jwt;
+  if (jwt) {
+    headers["Authorization"] = `Bearer ${jwt}`;
   }
   headers["x-api-secret"] = config.auth.apiSecret;
   return headers;

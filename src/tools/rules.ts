@@ -2,16 +2,16 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { platform, aiJourney } from "../http-client.js";
 import { config } from "../config.js";
+import { session } from "../session.js";
 
 export function registerRuleTools(server: McpServer) {
   server.tool(
     "list_rules",
     "Lista todas as regras comportamentais da empresa. Regras definem quando componentes (modals, cards, blocks) sao exibidos ao usuario.",
-    {
-      companyId: z.string().optional().describe("ID da empresa"),
-    },
-    async ({ companyId }) => {
-      const cid = companyId || config.defaultCompanyId;
+    {},
+    async () => {
+      session.requireAuth();
+      const cid = session.companyId;
       const data = await platform.get("/api/rules", { companyId: cid });
       return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
     }
@@ -34,7 +34,6 @@ Tipos de condicao validos para conditions[].type:
 
 Operadores: igual, diferente, maior_que, menor_que, maior_ou_igual, menor_ou_igual, contém, não_contém, existe, não_existe, começa_com, termina_com`,
     {
-      companyId: z.string().optional().describe("ID da empresa"),
       name: z.string().describe("Nome da regra"),
       description: z.string().optional().describe("Descricao da regra"),
       type: z.enum(["Comportamental", "Plano", "Gerada por IA"]).optional().describe("Tipo da regra"),
@@ -47,8 +46,9 @@ Operadores: igual, diferente, maior_que, menor_que, maior_ou_igual, menor_ou_igu
       action_js: z.string().optional().describe("Codigo JavaScript a executar quando a regra dispara"),
       action_components: z.array(z.string()).optional().describe("IDs dos componentes (modals, cards) a exibir"),
     },
-    async ({ companyId, name, description, type, json, action_js, action_components }) => {
-      const cid = companyId || config.defaultCompanyId;
+    async ({ name, description, type, json, action_js, action_components }) => {
+      session.requireAuth();
+      const cid = session.companyId;
       const data = await platform.post("/api/rules", {
         company_id: cid,
         name,
@@ -67,12 +67,12 @@ Operadores: igual, diferente, maior_que, menor_que, maior_ou_igual, menor_ou_igu
     "Gera uma regra comportamental automaticamente usando IA a partir de uma descricao em linguagem natural. O sistema usa Knowledge Graph para validar atributos e operadores. Exemplo: 'Quando o usuario depositar mais de R$500 e estiver na pagina de cassino'.",
     {
       prompt: z.string().min(1).max(1000).describe("Descricao em linguagem natural do comportamento desejado"),
-      companyId: z.string().optional().describe("ID da empresa"),
       available_cards: z.array(z.string()).optional().describe("IDs dos cards/componentes disponiveis para a regra"),
       language: z.enum(["PT", "EN"]).optional().describe("Idioma (default: PT)"),
     },
-    async ({ prompt, companyId, available_cards, language }) => {
-      const cid = companyId || config.defaultCompanyId;
+    async ({ prompt, available_cards, language }) => {
+      session.requireAuth();
+      const cid = session.companyId;
       const data = await aiJourney.post("/api/v1/generate/rule", {
         prompt,
         company_id: cid,

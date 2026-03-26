@@ -2,16 +2,16 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { platform } from "../http-client.js";
 import { config } from "../config.js";
+import { session } from "../session.js";
 
 export function registerSmartBlockTools(server: McpServer) {
   server.tool(
     "list_smart_blocks",
     "Lista todos os Smart Blocks da empresa. Smart Blocks sao componentes HTML/imagem injetados em paginas do cliente (substituindo, antes, depois de elementos DOM).",
-    {
-      companyId: z.string().optional().describe("ID da empresa"),
-    },
-    async ({ companyId }) => {
-      const cid = companyId || config.defaultCompanyId;
+    {},
+    async () => {
+      session.requireAuth();
+      const cid = session.companyId;
       const data = await platform.get(`/api/smart-blocks/company/${cid}`);
       return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
     }
@@ -21,7 +21,6 @@ export function registerSmartBlockTools(server: McpServer) {
     "create_smart_block",
     "Cria um Smart Block. Pode ser HTML customizado, imagem, ou personalizacao (jogos recomendados, trending, etc). Configuravel com targeting por CSS selector, paginas, segmentos e devices.",
     {
-      companyId: z.string().optional().describe("ID da empresa"),
       name: z.string().describe("Nome do block"),
       description: z.string().optional().describe("Descricao"),
       contentType: z.enum(["html", "image", "personalization"]).optional().describe("Tipo de conteudo"),
@@ -44,8 +43,9 @@ export function registerSmartBlockTools(server: McpServer) {
         cooldownMinutes: z.number().optional(),
       }).optional(),
     },
-    async ({ companyId, name, description, contentType, status, htmlContent, targeting, displayRules, frequency }) => {
-      const cid = companyId || config.defaultCompanyId;
+    async ({ name, description, contentType, status, htmlContent, targeting, displayRules, frequency }) => {
+      session.requireAuth();
+      const cid = session.companyId;
       const data = await platform.post("/api/smart-blocks", {
         companyId: cid,
         name,

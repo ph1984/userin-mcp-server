@@ -2,16 +2,16 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { platform } from "../http-client.js";
 import { config } from "../config.js";
+import { session } from "../session.js";
 
 export function registerCampaignTools(server: McpServer) {
   server.tool(
     "list_campaigns",
     "Lista todas as campanhas da empresa. Campanhas podem ser SMS, RCS, WhatsApp ou Email.",
-    {
-      companyId: z.string().optional().describe("ID da empresa"),
-    },
-    async ({ companyId }) => {
-      const cid = companyId || config.defaultCompanyId;
+    {},
+    async () => {
+      session.requireAuth();
+      const cid = session.companyId;
       const data = await platform.get("/api/campaigns", { companyId: cid });
       return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
     }
@@ -21,7 +21,6 @@ export function registerCampaignTools(server: McpServer) {
     "create_campaign",
     "Cria uma campanha de messaging (SMS, Email, RCS, WhatsApp). Define audiencia, conteudo, e canal de envio.",
     {
-      companyId: z.string().optional().describe("ID da empresa"),
       name: z.string().describe("Nome da campanha"),
       type: z.enum(["sms", "email", "rcs", "whatsapp"]).describe("Canal de envio"),
       content: z.object({
@@ -38,8 +37,9 @@ export function registerCampaignTools(server: McpServer) {
         timezone: z.string().optional().describe("Timezone (ex: America/Sao_Paulo)"),
       }).optional().describe("Agendamento"),
     },
-    async ({ companyId, name, type, content, audience, schedule }) => {
-      const cid = companyId || config.defaultCompanyId;
+    async ({ name, type, content, audience, schedule }) => {
+      session.requireAuth();
+      const cid = session.companyId;
       const data = await platform.post("/api/campaigns", {
         companyId: cid,
         name,

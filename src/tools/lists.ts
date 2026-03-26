@@ -2,16 +2,16 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { platform } from "../http-client.js";
 import { config } from "../config.js";
+import { session } from "../session.js";
 
 export function registerListTools(server: McpServer) {
   server.tool(
     "list_lists",
     "Lista todas as listas de contatos da empresa. Listas sao usadas como audiencia para campanhas (SMS, Email, RCS, WhatsApp).",
-    {
-      companyId: z.string().optional().describe("ID da empresa"),
-    },
-    async ({ companyId }) => {
-      const cid = companyId || config.defaultCompanyId;
+    {},
+    async () => {
+      session.requireAuth();
+      const cid = session.companyId;
       const data = await platform.get("/api/lists", { companyId: cid });
       return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
     }
@@ -27,12 +27,12 @@ FLUXO PARA CAMPANHA POR LISTA:
 3. create_campaign({ type: "sms", audience: { listId }, content: { body: "Promo!" } })
 4. execute_campaign(campaignId)`,
     {
-      companyId: z.string().optional().describe("ID da empresa"),
       name: z.string().describe("Nome da lista (ex: 'VIPs Dezembro', 'Apostadores Real Madrid')"),
       description: z.string().optional().describe("Descricao da lista"),
     },
-    async ({ companyId, name, description }) => {
-      const cid = companyId || config.defaultCompanyId;
+    async ({ name, description }) => {
+      session.requireAuth();
+      const cid = session.companyId;
       const data = await platform.post("/api/lists", {
         companyId: cid,
         name,

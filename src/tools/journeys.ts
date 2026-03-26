@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { platform } from "../http-client.js";
 import { config } from "../config.js";
+import { session } from "../session.js";
 
 const NODE_TYPES_DESCRIPTION = `Tipo do node. SEMPRE consulte get_node_types para ver os tipos disponiveis.
 
@@ -95,11 +96,10 @@ export function registerJourneyTools(server: McpServer) {
   server.tool(
     "list_journeys",
     "Lista todas as journeys da empresa. Journeys sao fluxos de automacao visual com triggers, condicoes e acoes. Retorna id, nome, status, tipo (insite/offsite), e contagem de nodes.",
-    {
-      companyId: z.string().optional().describe("ID da empresa"),
-    },
-    async ({ companyId }) => {
-      const cid = companyId || config.defaultCompanyId;
+    {},
+    async () => {
+      session.requireAuth();
+      const cid = session.companyId;
       const data = await platform.get("/api/journeys", { companyId: cid });
       return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
     }
@@ -174,13 +174,13 @@ Use apos criar e ativar uma jornada offsite. O usuario e identificado por extern
 
 Retorna: quantas jornadas foram avaliadas, quais dispararam, quais foram puladas, e tempo de execucao.`,
     {
-      companyId: z.string().optional().describe("ID da empresa"),
       externalId: z.string().optional().describe("ID externo do usuario (ID do jogador na plataforma do cliente)"),
       visitorId: z.string().optional().describe("ID do visitante/browser (alternativa ao externalId)"),
       event: z.string().optional().describe("Nome do evento que disparou (ex: 'real_madrid_bet', 'promo_vip'). Default: 'webhook'"),
     },
-    async ({ companyId, externalId, visitorId, event }) => {
-      const cid = companyId || config.defaultCompanyId;
+    async ({ externalId, visitorId, event }) => {
+      session.requireAuth();
+      const cid = session.companyId;
       const data = await platform.post("/api/journeys/offsite/trigger", {
         companyId: cid,
         externalId,
@@ -207,15 +207,15 @@ FLUXO COMPLETO:
 
 Retorna: total processado, quantos com sucesso, e resultados individuais.`,
     {
-      companyId: z.string().optional().describe("ID da empresa"),
       users: z.array(z.object({
         externalId: z.string().optional().describe("ID externo do usuario"),
         visitorId: z.string().optional().describe("ID do visitante (alternativa)"),
       })).describe("Array de usuarios para disparar. Cada um precisa de externalId ou visitorId."),
       event: z.string().optional().describe("Nome do evento (ex: 'promo_real_madrid'). Default: 'batch'"),
     },
-    async ({ companyId, users, event }) => {
-      const cid = companyId || config.defaultCompanyId;
+    async ({ users, event }) => {
+      session.requireAuth();
+      const cid = session.companyId;
       const data = await platform.post("/api/journeys/offsite/trigger-batch", {
         companyId: cid,
         users,

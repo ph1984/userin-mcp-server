@@ -2,16 +2,16 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { platform } from "../http-client.js";
 import { config } from "../config.js";
+import { session } from "../session.js";
 
 export function registerSmartModalTools(server: McpServer) {
   server.tool(
     "list_smart_modals",
     "Lista todos os Smart Modals da empresa. Smart Modals sao popups/overlays exibidos no site do cliente com HTML/imagem, CTA, animacoes e regras de exibicao.",
-    {
-      companyId: z.string().optional().describe("ID da empresa"),
-    },
-    async ({ companyId }) => {
-      const cid = companyId || config.defaultCompanyId;
+    {},
+    async () => {
+      session.requireAuth();
+      const cid = session.companyId;
       const data = await platform.get(`/api/smart-modals/company/${cid}`);
       return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
     }
@@ -21,7 +21,6 @@ export function registerSmartModalTools(server: McpServer) {
     "create_smart_modal",
     "Cria um Smart Modal completo. Pode ser do tipo 'html' (conteudo HTML customizado) ou 'image' (imagem com CTA). Inclui configuracao de desktop/mobile, triggers, targeting por segmento, frequencia e animacao de entrada.",
     {
-      companyId: z.string().optional().describe("ID da empresa"),
       name: z.string().describe("Nome do modal"),
       description: z.string().optional().describe("Descricao"),
       type: z.enum(["html", "image"]).optional().describe("Tipo: html ou image (default: html)"),
@@ -69,8 +68,9 @@ export function registerSmartModalTools(server: McpServer) {
         easing: z.string().optional(),
       }).optional().describe("Animacao de entrada"),
     },
-    async ({ companyId, name, description, type, status, desktop, mobile, triggers, targeting, frequency, entranceAnimation }) => {
-      const cid = companyId || config.defaultCompanyId;
+    async ({ name, description, type, status, desktop, mobile, triggers, targeting, frequency, entranceAnimation }) => {
+      session.requireAuth();
+      const cid = session.companyId;
       const data = await platform.post("/api/smart-modals", {
         companyId: cid,
         name,

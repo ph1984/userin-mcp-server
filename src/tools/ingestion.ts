@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { ingestion } from "../http-client.js";
+import { session } from "../session.js";
 
 export function registerIngestionTools(server: McpServer) {
   server.tool(
